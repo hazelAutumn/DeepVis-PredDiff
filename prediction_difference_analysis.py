@@ -35,7 +35,7 @@ class PredDiffAnalyser:
         
         # inputs
         self.x = np.copy(x)
-        self.tar_func = tar_func
+        self.tar_func = tar_func #function to get the target ouput
         self.sampler = sampler
         self.num_samples = num_samples
         self.batch_size = batch_size
@@ -45,7 +45,7 @@ class PredDiffAnalyser:
         self.num_feats = len(self.x.ravel())/3  # we make the analysis not per color channel, 
                                                 # but for all channels at once,
                                                 # therefore we divide the number of features by 3
-        self.true_tar_val = self.tar_func(self.x)  # true network state for the given input
+        self.true_tar_val = self.tar_func(self.x)  # true network state for the given input ???
         self.num_blobs = len(self.true_tar_val)  
         self.num_metrics = 2                    # the number of metrics we use for evaluating
                                                 # the prediction difference (avg and max of 
@@ -212,7 +212,7 @@ class PredDiffAnalyser:
         for b in xrange(self.num_blobs): 
             pred_diffs = np.zeros((self.tests_per_batch,tarVals[b].shape[-1]))
             for t in xrange(self.tests_per_batch):
-                avgP = np.average(tarVals[b][t], axis=0)
+                avgP = np.average(tarVals[b][t], axis=0) #avgP
                 # if we deal with probabilities, i.e., the last blobs, use this:
                 if b==(self.num_blobs-1):
                     # do a laplace correction to avoid problems with zero probabilities
