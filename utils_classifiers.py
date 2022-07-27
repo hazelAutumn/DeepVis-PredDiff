@@ -71,7 +71,7 @@ def get_caffenet(netname):
         
     else:
         
-        print 'Provided netname unknown. Returning None.'
+        print('Provided netname unknown. Returning None.')
         net = None
     
     return net  

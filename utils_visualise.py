@@ -34,7 +34,7 @@ def plot_results(x_test, x_test_im, sensMap, predDiff, tarFunc, classnames, test
     frame.axes.get_xaxis().set_ticks([])
     frame.axes.get_yaxis().set_ticks([]) 
     plt.subplot(2,2,3)
-    p = predDiff.reshape((imsize[1],imsize[2],-1))[:,:,tarIdx]
+    p = predDiff.reshape((imsize[1],imsize[2],-1))[:,:,0]
     plt.imshow(p, cmap=cm.seismic, vmin=-np.max(np.abs(p)), vmax=np.max(np.abs(p)), interpolation='nearest')
     plt.colorbar()
     #plt.imshow(np.abs(p), cmap=cm.Greys_r)
@@ -43,7 +43,7 @@ def plot_results(x_test, x_test_im, sensMap, predDiff, tarFunc, classnames, test
     frame.axes.get_xaxis().set_ticks([])
     frame.axes.get_yaxis().set_ticks([]) 
     plt.subplot(2,2,4)
-    plt.title('class: {}'.format(tarClass))
+    plt.title('class: {}'.format(0))
     p = get_overlayed_image(x_test_im, p)
     #p = predDiff[0,:,:,np.argmax(netPred(net, x_test)[0]),1].reshape((224,224))
     plt.imshow(p, cmap=cm.seismic, vmin=-np.max(np.abs(p)), vmax=np.max(np.abs(p)), interpolation='nearest')
@@ -59,6 +59,33 @@ def plot_results(x_test, x_test_im, sensMap, predDiff, tarFunc, classnames, test
     plt.tight_layout()
     plt.savefig(save_path)
     plt.close()
+    for i in range(pred_diff.shape[2]):
+        p = predDiff.reshape((imsize[1],imsize[2],-1))[:,:,i]
+        plt.imshow(p, cmap=cm.seismic, vmin=-np.max(np.abs(p)), vmax=np.max(np.abs(p)), interpolation='nearest')
+        plt.colorbar()
+        
+        #plt.imshow(np.abs(p), cmap=cm.Greys_r)
+        plt.title('weight of evidence')
+        frame = pylab.gca()
+        frame.axes.get_xaxis().set_ticks([])
+        frame.axes.get_yaxis().set_ticks([]) 
+        plt.title('feature map: {}'.format(i))
+        p = get_overlayed_image(x_test_im, p)
+        #p = predDiff[0,:,:,np.argmax(netPred(net, x_test)[0]),1].reshape((224,224))
+        plt.imshow(p, cmap=cm.seismic, vmin=-np.max(np.abs(p)), vmax=np.max(np.abs(p)), interpolation='nearest')
+        #plt.title('class entropy')
+        frame = pylab.gca()
+        frame.axes.get_xaxis().set_ticks([])
+        frame.axes.get_yaxis().set_ticks([]) 
+    
+        fig = plt.gcf()
+        fig.set_size_inches(np.array([24,24]), forward=True)
+        plt.tight_layout()
+        plt.tight_layout()
+        plt.tight_layout()
+        save_path_i = save_path+"_featuremap_"+str(i)
+        plt.savefig(save_path_i)
+        plt.close()
 
 
 def get_overlayed_image(x, c, gray_factor_bg = 0.3):    

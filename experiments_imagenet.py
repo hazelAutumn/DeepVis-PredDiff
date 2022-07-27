@@ -35,17 +35,17 @@ import sensitivity_analysis_caffe as SA
 # -------------------> CHANGE SETTINGS HERE <--------------------
 
 # pick neural network to run experiment for (alexnet, googlenet, vgg)
-netname = 'googlenet'
+netname = 'alexnet' #'googlenet'
 
 # pick for which layers the explanations should be computet
 # (names depend on network, output layer is usually called 'prob')
-blobnames = ['prob']
+blobnames = ['conv1','prob']
 #blobnames = ['conv1','conv2','conv3','conv4','conv5','fc6','fc7','fc8','prob'] # alexnet
 #blobnames = ['conv1/7x7_s2', 'conv2/3x3_reduce', 'conv2/3x3', 'conv2/norm2', 'inception_3a/output', 'inception_3b/output', 'inception_4a/output', 'inception_4b/output', 'inception_4c/output', 'inception_4d/output', 'inception_4e/output','inception_5a/output', 'inception_5b/output', 'loss3/classifier', 'prob']
 #blobnames = ['conv1_1', 'conv1_2', 'conv2_1', 'conv2_2', 'conv3_1', 'conv3_2', 'conv3_3', 'conv4_1', 'conv4_2', 'conv4_3', 'conv5_1', 'conv5_2', 'conv5_3', 'fc6', 'fc7', 'fc8', 'prob'] # vgg
 
 # is caffe running in gpu mode?
-gpu = True
+gpu = False
 
 # pick image indices which are analysed (in alphabetical order as in the ./data folder) [0,1,2,...]
 # (if None, all images in './data' will be analysed)
@@ -115,13 +115,13 @@ for test_idx in test_indices:
         save_path = path_results+'{}_{}_winSize{}_margSampl_numSampl{}_{}'.format(X_filenames[test_idx],y_pred_label,win_size,num_samples,netname)
 
     if os.path.exists(save_path+'.npz'):
-        print 'Results for ', X_filenames[test_idx], ' exist, will move to the next image. '
+        print('Results for ', X_filenames[test_idx], ' exist, will move to the next image. ')
         continue
                  
-    print "doing test...", "file :", X_filenames[test_idx], ", net:", netname, ", win_size:", win_size, ", sampling: ", sampl_style
+    print ("doing test...", "file :", X_filenames[test_idx], ", net:", netname, ", win_size:", win_size, ", sampling: ", sampl_style)
 
     # compute the sensitivity map
-    layer_name = net.blobs.keys()[-2] # look at penultimate layer (like in Simonyan et al. (2013))
+    layer_name = list(net.blobs.keys())[-2] # look at penultimate layer (like in Simonyan et al. (2013))
     sensMap = SA.get_sens_map(net, x_test[np.newaxis], layer_name, np.argmax(target_func(x_test)[-1][0]))                 
 
     start_time = time.time()
@@ -135,9 +135,10 @@ for test_idx in test_indices:
     pred_diff = pda.get_rel_vect(win_size=win_size, overlap=overlapping)
     
     # plot and save the results
-    utlV.plot_results(x_test, x_test_im, sensMap, pred_diff[0], target_func, classnames, test_idx, save_path)
     np.savez(save_path, *pred_diff)
-    print "--- Total computation took {:.4f} minutes ---".format((time.time() - start_time)/60)
+    utlV.plot_results(x_test, x_test_im, sensMap, pred_diff[0], target_func, classnames, test_idx, save_path)
+    #np.savez(save_path, *pred_diff)
+    print ("--- Total computation took {:.4f} minutes ---".format((time.time() - start_time)/60))
     
         
 

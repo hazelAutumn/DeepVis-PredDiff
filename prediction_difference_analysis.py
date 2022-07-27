@@ -35,17 +35,18 @@ class PredDiffAnalyser:
         
         # inputs
         self.x = np.copy(x)
-        self.tar_func = tar_func #function to get the target ouput
+        self.tar_func = tar_func
         self.sampler = sampler
         self.num_samples = num_samples
         self.batch_size = batch_size
         self.prob_tar = prob_tar
         
         # some other useful values
-        self.num_feats = len(self.x.ravel())/3  # we make the analysis not per color channel, 
+        self.num_feats = len(self.x.ravel())//3  # we make the analysis not per color channel, 
                                                 # but for all channels at once,
                                                 # therefore we divide the number of features by 3
-        self.true_tar_val = self.tar_func(self.x)  # true network state for the given input ???
+        self.true_tar_val = self.tar_func(self.x)  # true network state for the given input
+        #print("x shape:", x.shape)
         self.num_blobs = len(self.true_tar_val)  
         self.num_metrics = 2                    # the number of metrics we use for evaluating
                                                 # the prediction difference (avg and max of 
@@ -55,6 +56,10 @@ class PredDiffAnalyser:
         # drop the first dimension of the elements in the true target value list,
         # since it is not necessary (since we only forwarded a single feature vector)
         self.true_tar_val = [t[0] for t in self.true_tar_val]
+
+        #NOTE:debug in here
+        #for t in self.true_tar_val:
+        #    print("true tar element shape:", t.shape)
         
  
 #%%
@@ -71,16 +76,23 @@ class PredDiffAnalyser:
                             to interpret the result, look at one output (e.g., the predicted class)
                             and visualise the input features in some way
         """
-        
+        #NOTE: added by HTHU
+        #print("numfeat", int(self.num_feats))
+        #print("true tar val", self.true_tar_val[0].shape[0])
+        #print("num blobs", self.num_blobs)
+
         # create array for relevance vectors, each element has dimensions (num_feats)*blobdimension
         # where the relevance of each feature on the different activations in that blob is stored
-        rel_vects = [np.zeros((self.num_feats, self.true_tar_val[b].shape[0]), dtype=np.float64) for b in xrange(self.num_blobs)]
+        rel_vects = [np.zeros((int(self.num_feats), self.true_tar_val[b].shape[0]), dtype=np.float64) for b in range(int(self.num_blobs))]
+        #for r in rel_vects:
+        #    print("rel_vect shape: ", r.shape)
+
 
         # a counts vector to keep track of how often a feature is marginalised out
-        counts = np.zeros((self.num_feats), dtype=np.int)
+        counts = np.zeros(int(self.num_feats), dtype=np.int)
 
         # a matrix where each entry reflects the index in the flattened input (image)
-        all_feats = np.reshape([i for i in xrange(self.num_feats*3)], self.x.shape)
+        all_feats = np.reshape([i for i in range(self.num_feats*3)], self.x.shape)
         
         if overlap:
             
@@ -96,9 +108,9 @@ class PredDiffAnalyser:
                     if win_idx==self.tests_per_batch:
                         # evaluate the prediction difference
                         pred_diffs = self._get_rel_vect_subset(windows)
-                        for w in xrange(self.tests_per_batch):                            
+                        for w in range(self.tests_per_batch):                            
                             window = windows[w]
-                            for b in xrange(self.num_blobs):
+                            for b in range(self.num_blobs):
                                 rel_vects[b][window[window<self.num_feats]] += pred_diffs[b][w]
                             counts[window[window<self.num_feats]] += 1
                         win_idx = 0
@@ -127,9 +139,9 @@ class PredDiffAnalyser:
                     if win_idx==self.tests_per_batch:
                         # evaluate the prediction difference
                         pred_diffs = self._get_rel_vect_subset(windows)
-                        for w in xrange(self.tests_per_batch):
+                        for w in range(self.tests_per_batch):
                             window = windows[w]
-                            for b in xrange(self.num_blobs):
+                            for b in range(self.num_blobs):
                                 rel_vects[b][window[window<self.num_feats]] += pred_diffs[b][w]
                             counts[window[window<self.num_feats]] += 1
                         win_idx = 0
@@ -140,7 +152,7 @@ class PredDiffAnalyser:
             pred_diffs = self._get_rel_vect_subset(windows[:win_idx+1])
             for w in range(win_idx+1):
                 window = windows[w]
-                for b in xrange(self.num_blobs):
+                for b in range(self.num_blobs):
                     rel_vects[b][window[window<self.num_feats]] += pred_diffs[b][w]
                 counts[window[window<self.num_feats]] += 1
                             
@@ -176,15 +188,24 @@ class PredDiffAnalyser:
         x_new = np.zeros((self.tests_per_batch,self.num_samples,len(self.x.ravel())))
         x_new[:] = np.copy(self.x).ravel()[np.newaxis]
 
-#        for f in xrange(feature_sets.shape[0]):
-        for f in xrange(len(feature_sets)):
+#        for f in range(feature_sets.shape[0]):
+        for f in range(len(feature_sets)):
             x_new[f, :, feature_sets[f].ravel()] = self.sampler.get_samples(feature_sets[f], self.x, self.num_samples).T
+        #print("x new shape: ", x_new.shape)
             
         # get prediction for the altered x-values
         tarVals = self.tar_func(x_new.reshape((self.tests_per_batch*self.num_samples,-1)))
         
-        for b in xrange(self.num_blobs):
-            tarVals[b] = tarVals[b].reshape((self.tests_per_batch,self.num_samples,-1))
+        #NOTE: debug in here
+        #for i in tarVals:
+        #   print("tarVals before: ", i.shape)
+
+        for b in range(self.num_blobs):
+            tarVals[b] = tarVals[b].reshape((self.tests_per_batch,self.num_samples,tarVals[b].shape[1], -1))
+        
+        #NOTE: debug in here
+        #for i in tarVals:
+        #   print("tarVals: ", i.shape)
         
         # evaluate the prediction difference
         rel_vect = self._evaluate_prediction_difference(tarVals)
@@ -209,10 +230,12 @@ class PredDiffAnalyser:
         prediction_diffs = []
         # For the laplace correction, we need the number of training instances
         IMAGENET_TRAINSIZE = 100000
-        for b in xrange(self.num_blobs): 
-            pred_diffs = np.zeros((self.tests_per_batch,tarVals[b].shape[-1]))
-            for t in xrange(self.tests_per_batch):
-                avgP = np.average(tarVals[b][t], axis=0) #avgP
+        for b in range(self.num_blobs): 
+            pred_diffs = np.zeros((self.tests_per_batch,tarVals[b].shape[-2])) #np.zeros((self.tests_per_batch,tarVals[b].shape[-1]))
+            #print("pred_diffs:", pred_diffs.shape)
+            for t in range(self.tests_per_batch):
+                #print("tarVals", tarVals[b][t].shape)
+                avgP = np.average(tarVals[b][t], axis=0)
                 # if we deal with probabilities, i.e., the last blobs, use this:
                 if b==(self.num_blobs-1):
                     # do a laplace correction to avoid problems with zero probabilities
@@ -225,7 +248,7 @@ class PredDiffAnalyser:
                     pd = oddsTarVal-oddsAvgP
                 # if we do not deal with probabilities, we just return the distance to the average
                 else:
-                    pd = self.true_tar_val[b] - avgP    
+                    pd = self.true_tar_val[b].reshape(avgP.shape) - avgP    
                 # avg/max for the feature maps if we have feature maps in conv layers
                 pd = pd.reshape((pd.shape[0], -1))
                 pred_diffs[t] = np.average(pd, axis=1) # will only have an effect for convolutional layers
